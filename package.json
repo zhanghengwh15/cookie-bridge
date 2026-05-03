@@ -1,0 +1,15 @@
+{
+  "name": "cookie-bridge",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "把已登录站点的 cookie / localStorage 同步给本地 Tauri 程序",
+  "scripts": {
+    "build:extension": "node scripts/build-extension.mjs",
+    "pack:edge": "npm run build:extension && node scripts/pack-edge.mjs",
+    "clean": "rm -rf dist-extension cookie-bridge-edge-extension.zip"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1"
+  }
+}
