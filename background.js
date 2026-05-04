@@ -128,8 +128,8 @@ function shapeCookie(c) {
     path: c.path || '/',
     expires: c.expirationDate ? Math.floor(c.expirationDate) : 0,
     secure: c.secure ? 1 : 0,
-    http_only: c.httpOnly ? 1 : 0,
-    same_site: c.sameSite || 'unspecified',
+    httpOnly: c.httpOnly ? 1 : 0,
+    sameSite: c.sameSite || 'unspecified',
   };
 }
 
@@ -205,7 +205,7 @@ function syncDomain(hostname) {
     try {
       const cookies = await fetchCookiesForHost(hostname);
       const lsMap = lsCache.get(hostname);
-      const local_storage = lsMap ? Object.fromEntries(lsMap) : null;
+      const localStorage = lsMap ? Object.fromEntries(lsMap) : null;
 
       console.log('[CookieBridge DEBUG] syncDomain', hostname,
         '| cookies=', cookies.length,
@@ -215,7 +215,7 @@ function syncDomain(hostname) {
       await pushToTauri({
         domain: hostname,
         cookies: cookies.map(shapeCookie),
-        local_storage,
+        localStorage,
         ts: Date.now(),
       });
     } catch (e) {

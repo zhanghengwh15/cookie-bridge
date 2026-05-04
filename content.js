@@ -65,10 +65,10 @@
     }
   });
 
-  // ④ 60s 兜底轮询
+  // ④ 150s 兜底轮询
   setInterval(() => {
     sendLsUpdate('full', { all: readAll() });
-  }, 60_000);
+  }, 150_000);
 
   // ⑤ 脚本注入时若页面已加载完成，立即补发一次全量
   // （动态注册 content script 时不会触发 load 事件）
