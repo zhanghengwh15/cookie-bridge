@@ -12,6 +12,29 @@
     return out;
   }
 
+  // 向 MAIN world 的 inject.js 请求全量 localStorage（ISOLATED world 读不到页面的 localStorage）
+  function requestFullFromInject() {
+    return new Promise((resolve) => {
+      const reqId = Math.random().toString(36).slice(2);
+      const handler = (e) => {
+        if (e.source !== window) return;
+        const data = e.data;
+        if (!data || data[NS] !== true) return;
+        if (data.op === 'getAllResponse' && data.reqId === reqId) {
+          window.removeEventListener('message', handler);
+          resolve(data.all || {});
+        }
+      };
+      window.addEventListener('message', handler);
+      window.postMessage({ [NS]: true, op: 'getAll', reqId }, '*');
+      // 超时 fallback：读 ISOLATED world 自己的 localStorage（大概率是空的，但总比卡住强）
+      setTimeout(() => {
+        window.removeEventListener('message', handler);
+        resolve(readAll());
+      }, 3000);
+    });
+  }
+
   function sendLsUpdate(op, extra) {
     const payload = {
       type: 'lsUpdate',
@@ -30,9 +53,10 @@
   }
 
   // ① 页面 load 时读全量
-  window.addEventListener('load', () => {
+  window.addEventListener('load', async () => {
     console.log('[CookieBridge CS] load 事件触发');
-    sendLsUpdate('full', { all: readAll() });
+    const all = await requestFullFromInject();
+    sendLsUpdate('full', { all });
   });
 
   // ② 监听 inject.js 的 postMessage
@@ -66,8 +90,9 @@
   });
 
   // ④ 150s 兜底轮询
-  setInterval(() => {
-    sendLsUpdate('full', { all: readAll() });
+  setInterval(async () => {
+    const all = await requestFullFromInject();
+    sendLsUpdate('full', { all });
   }, 150_000);
 
   // ⑤ 脚本注入时若页面已加载完成，立即补发一次全量
@@ -75,6 +100,6 @@
   console.log('[CookieBridge CS] 注入完成, readyState=', document.readyState, 'hostname=', location.hostname);
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     console.log('[CookieBridge CS] 页面已加载，立即发送全量');
-    sendLsUpdate('full', { all: readAll() });
+    requestFullFromInject().then(all => sendLsUpdate('full', { all }));
   }
 })();

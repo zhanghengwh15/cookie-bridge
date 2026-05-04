@@ -26,4 +26,18 @@
     _clear.call(this);
     post('clear', {});
   };
+
+  // 响应 content.js 的全量读取请求
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    const data = e.data;
+    if (!data || data[NS] !== true || data.op !== 'getAll') return;
+
+    const all = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      all[k] = localStorage.getItem(k);
+    }
+    post('getAllResponse', { all, reqId: data.reqId });
+  });
 })();
