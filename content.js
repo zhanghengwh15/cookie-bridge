@@ -59,7 +59,17 @@
     sendLsUpdate('full', { all });
   });
 
-  // ② 监听 inject.js 的 postMessage
+  // ② 监听 background 的全量读取请求
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === 'requestFullLs') {
+      requestFullFromInject().then(all => {
+        sendResponse({ all });
+      });
+      return true;
+    }
+  });
+
+  // ③ 监听 inject.js 的 postMessage
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data;

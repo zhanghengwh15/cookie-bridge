@@ -275,7 +275,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (msg.hostname) {
           syncDomain(msg.hostname);
         } else {
-          await syncAll();
+          const sites = await getSites();
+          for (const s of sites) {
+            const tabs = await chrome.tabs.query({ url: `*://${s.hostname}/*` });
+            if (tabs.length > 0) {
+              try {
+                const res = await chrome.tabs.sendMessage(tabs[0].id, { type: 'requestFullLs' });
+                if (res && res.all) {
+                  lsCache.set(s.hostname, new Map(Object.entries(res.all)));
+                  await saveLsCache();
+                }
+              } catch (e) {
+                console.warn('[CookieBridge] 请求全量 ls 失败', s.hostname, e);
+              }
+            }
+            syncDomain(s.hostname);
+          }
         }
         sendResponse({ ok: true });
         break;

@@ -10,6 +10,45 @@
 4. 选择本目录 `cookie-bridge-ext/`
 5. 复制扩展 ID（后续需要时可用）
 
+## 打包成压缩包
+
+用于分发或上传到 Edge / Chrome 应用商店。
+
+### 前置依赖
+
+```bash
+npm install
+```
+
+### 仅构建（输出到 dist-extension/）
+
+```bash
+npm run build:extension
+```
+
+会把 `manifest.json`、`background.js`、`content.js`、`inject.js`、`popup.html`、`popup.js`、`README.md`、`icons/`、`lib/` 复制到 [dist-extension/](dist-extension/)。
+
+### 构建并打包成 zip
+
+```bash
+npm run pack:edge
+```
+
+执行流程：
+1. 先跑 `build:extension` 生成 [dist-extension/](dist-extension/)
+2. 校验 `manifest.json` 与 `popup.html` 完整性
+3. 用最高压缩等级（zlib level 9）打包成 `cookie-bridge-edge-extension.zip`
+
+产物路径：项目根目录下的 `cookie-bridge-edge-extension.zip`，可直接拖到 `chrome://extensions/` 安装，或上传到应用商店。
+
+### 清理产物
+
+```bash
+npm run clean
+```
+
+会删除 [dist-extension/](dist-extension/) 和 `cookie-bridge-edge-extension.zip`。
+
 ## 使用方法
 
 1. 确保 Tauri 程序已启动（监听 `127.0.0.1:8765`）
