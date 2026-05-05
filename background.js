@@ -134,8 +134,8 @@ function shapeCookie(c) {
 }
 
 async function pushToTauri(payload) {
+      const body = JSON.stringify(payload);
   try {
-    const body = JSON.stringify(payload);
     console.log('[CookieBridge] 请求体', payload.domain, body.substring(0, 2000));
     const res = await fetch(TAURI_ENDPOINT, {
       method: 'POST',
@@ -152,6 +152,7 @@ async function pushToTauri(payload) {
     console.error('[CookieBridge] 推送失败', e);
     setBadge('ERR', '#dc2626');
     logEvent('ERR', payload.domain, e.message);
+    console.log('[CookieBridge] 请求体', payload.domain, body);
     return false;
   }
 }
@@ -244,9 +245,11 @@ async function snapshotLsForHost(hostname) {
         target: { tabId: tab.id },
         world: 'MAIN',
         func: () => {
+          const skip = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel']);
           const out = {};
           for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i);
+            if (skip.has(k)) continue;
             out[k] = localStorage.getItem(k);
           }
           return out;
