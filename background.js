@@ -245,7 +245,7 @@ async function snapshotLsForHost(hostname) {
         target: { tabId: tab.id },
         world: 'MAIN',
         func: () => {
-          const skip = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel']);
+          const skip = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel','lowCodePaths']);
           const out = {};
           for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i);
@@ -352,7 +352,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case 'lsUpdate': {
         const host = msg.hostname;
-        const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel']);
+        const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel','lowCodePaths']);
         console.log('[CookieBridge DEBUG] 收到 lsUpdate', host, 'op=', msg.op, 'sender=', sender.url || sender.tab?.url);
         let map = lsCache.get(host);
         if (!map) {

@@ -2,7 +2,7 @@
   'use strict';
 
   const NS = '__cookieBridge';
-  const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel']);
+  const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel','lowCodePaths']);
 
   function readAll() {
     const out = {};

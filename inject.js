@@ -5,7 +5,7 @@
   if (window[NS + '_hooked']) return;
   window[NS + '_hooked'] = true;
 
-  const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel']);
+  const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel','lowCodePaths']);
 
   function post(op, detail) {
     window.postMessage({ [NS]: true, op, ...detail }, '*');
