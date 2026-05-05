@@ -42,19 +42,16 @@
       hostname: location.hostname,
       ...extra,
     };
-    console.log('[CookieBridge CS] 发送', payload);
-    if (!chrome.runtime || !chrome.runtime.sendMessage) {
-      console.error('[CookieBridge CS] chrome.runtime.sendMessage 不可用');
+    if (!chrome.runtime?.id) {
+      // 扩展上下文已失效（如扩展被重新加载），静默丢弃
       return;
     }
     chrome.runtime.sendMessage(payload)
-      .then(res => console.log('[CookieBridge CS] 发送成功', op, res))
-      .catch(err => console.error('[CookieBridge CS] 发送失败', op, err));
+      .catch(err => console.error('[CookieBridge CS] 发送失败', { op, payload, error: err?.message || err, stack: err?.stack }));
   }
 
   // ① 页面 load 时读全量
   window.addEventListener('load', async () => {
-    console.log('[CookieBridge CS] load 事件触发');
     const all = await requestFullFromInject();
     sendLsUpdate('full', { all });
   });
@@ -107,9 +104,7 @@
 
   // ⑤ 脚本注入时若页面已加载完成，立即补发一次全量
   // （动态注册 content script 时不会触发 load 事件）
-  console.log('[CookieBridge CS] 注入完成, readyState=', document.readyState, 'hostname=', location.hostname);
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    console.log('[CookieBridge CS] 页面已加载，立即发送全量');
     requestFullFromInject().then(all => sendLsUpdate('full', { all }));
   }
 })();

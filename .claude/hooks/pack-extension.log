@@ -1,0 +1,8 @@
+[2026-05-05T00:41:31.251Z] stdin ended, raw length= 42
+[2026-05-05T00:41:31.252Z] stdin raw= {"tool_input":{"file_path":"content.js"}}
+
+[2026-05-05T00:41:31.252Z] parsed json keys= ["tool_input"]
+[2026-05-05T00:41:31.253Z] extracted file_path= content.js
+[2026-05-05T00:41:31.253Z] regex matched= true
+[2026-05-05T00:41:31.254Z] exec npm run pack:edge in cwd= D:\frontCode\cookie-bridge\.claude
+[2026-05-05T00:41:32.720Z] pack:edge success

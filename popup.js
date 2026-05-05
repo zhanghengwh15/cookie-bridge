@@ -129,3 +129,10 @@ syncAllBtn.addEventListener('click', async () => {
 // 初始化
 checkTauri();
 refresh();
+
+// 默认填入当前标签页 URL，方便直接添加当前站点
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  if (tabs[0]?.url) {
+    urlInput.value = tabs[0].url;
+  }
+});

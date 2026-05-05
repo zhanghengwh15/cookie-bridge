@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/pack-extension.js"
+            "command": "cd \"d:/frontCode/cookie-bridge\" && node .claude/hooks/pack-extension.cjs"
           }
         ]
       }
