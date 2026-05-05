@@ -2,11 +2,13 @@
   'use strict';
 
   const NS = '__cookieBridge';
+  const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel']);
 
   function readAll() {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
+      if (SKIP_LS_KEYS.has(k)) continue;
       out[k] = localStorage.getItem(k);
     }
     return out;
@@ -87,6 +89,7 @@
 
   // ③ 监听 storage 事件（其他 tab 改了）
   window.addEventListener('storage', (e) => {
+    if (e.key !== null && SKIP_LS_KEYS.has(e.key)) return;
     if (e.key === null) {
       sendLsUpdate('clear', {});
     } else if (e.newValue === null) {

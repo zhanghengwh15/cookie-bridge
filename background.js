@@ -352,6 +352,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case 'lsUpdate': {
         const host = msg.hostname;
+        const SKIP_LS_KEYS = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel']);
         console.log('[CookieBridge DEBUG] 收到 lsUpdate', host, 'op=', msg.op, 'sender=', sender.url || sender.tab?.url);
         let map = lsCache.get(host);
         if (!map) {
@@ -359,20 +360,35 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           lsCache.set(host, map);
         }
         switch (msg.op) {
-          case 'set':
+          case 'set': {
+            if (SKIP_LS_KEYS.has(msg.k)) {
+              sendResponse({ ok: true });
+              return;
+            }
             map.set(msg.k, msg.v);
             break;
-          case 'remove':
+          }
+          case 'remove': {
+            if (SKIP_LS_KEYS.has(msg.k)) {
+              sendResponse({ ok: true });
+              return;
+            }
             map.delete(msg.k);
             break;
+          }
           case 'clear':
             map.clear();
             break;
-          case 'full':
+          case 'full': {
             const entries = msg.all || {};
-            console.log('[CookieBridge DEBUG] lsUpdate full', host, 'entries=', Object.keys(entries).length);
-            lsCache.set(host, new Map(Object.entries(entries)));
+            const filtered = {};
+            for (const [k, v] of Object.entries(entries)) {
+              if (!SKIP_LS_KEYS.has(k)) filtered[k] = v;
+            }
+            console.log('[CookieBridge DEBUG] lsUpdate full', host, 'entries=', Object.keys(filtered).length);
+            lsCache.set(host, new Map(Object.entries(filtered)));
             break;
+          }
         }
         await saveLsCache();
         syncDomain(host);
