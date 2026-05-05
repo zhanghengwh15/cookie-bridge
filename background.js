@@ -228,8 +228,41 @@ function syncDomain(hostname) {
 async function syncAll() {
   const sites = await getSites();
   for (const s of sites) {
+    await snapshotLsForHost(s.hostname);
     syncDomain(s.hostname);
   }
+}
+
+// 主动向目标 tab 的 MAIN world 注入函数读取 localStorage,
+// 不依赖 content script 是否已注入,适合"立即同步"这种按需场景。
+async function snapshotLsForHost(hostname) {
+  const tabs = await chrome.tabs.query({ url: `*://${hostname}/*` });
+  if (tabs.length === 0) return false;
+  for (const tab of tabs) {
+    try {
+      const [frame] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        world: 'MAIN',
+        func: () => {
+          const out = {};
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            out[k] = localStorage.getItem(k);
+          }
+          return out;
+        },
+      });
+      if (frame && frame.result) {
+        lsCache.set(hostname, new Map(Object.entries(frame.result)));
+        await saveLsCache();
+        console.log('[CookieBridge] snapshotLs', hostname, 'keys=', Object.keys(frame.result).length);
+        return true;
+      }
+    } catch (e) {
+      console.warn('[CookieBridge] snapshotLs 失败', hostname, tab.url, e);
+    }
+  }
+  return false;
 }
 
 // ========== 触发源 ==========
@@ -273,22 +306,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
       case 'syncNow': {
         if (msg.hostname) {
+          await snapshotLsForHost(msg.hostname);
           syncDomain(msg.hostname);
         } else {
           const sites = await getSites();
           for (const s of sites) {
-            const tabs = await chrome.tabs.query({ url: `*://${s.hostname}/*` });
-            if (tabs.length > 0) {
-              try {
-                const res = await chrome.tabs.sendMessage(tabs[0].id, { type: 'requestFullLs' });
-                if (res && res.all) {
-                  lsCache.set(s.hostname, new Map(Object.entries(res.all)));
-                  await saveLsCache();
-                }
-              } catch (e) {
-                console.warn('[CookieBridge] 请求全量 ls 失败', s.hostname, e);
-              }
-            }
+            await snapshotLsForHost(s.hostname);
             syncDomain(s.hostname);
           }
         }

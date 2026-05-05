@@ -99,13 +99,7 @@
     }
   });
 
-  // ④ 150s 兜底轮询
-  setInterval(async () => {
-    const all = await requestFullFromInject();
-    sendLsUpdate('full', { all });
-  }, 150_000);
-
-  // ⑤ 脚本注入时若页面已加载完成，立即补发一次全量
+  // ④ 脚本注入时若页面已加载完成，立即补发一次全量
   // （动态注册 content script 时不会触发 load 事件）
   console.log('[CookieBridge CS] 注入完成, readyState=', document.readyState, 'hostname=', location.hostname);
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
