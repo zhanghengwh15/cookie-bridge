@@ -245,7 +245,7 @@ async function snapshotLsForHost(hostname) {
         target: { tabId: tab.id },
         world: 'MAIN',
         func: () => {
-          const skip = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel','lowCodePaths']);
+          const skip = new Set(['customPaths','shedePaths','pathNode','tianweiPaths','menudata','eModel','lowCodePaths','fullRoutes']);
           const out = {};
           for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i);
