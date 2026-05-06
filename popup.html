@@ -80,15 +80,19 @@
     }
     .site-item .del:hover { color: #dc2626; }
 
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
     .sync-btn {
-      width: 100%;
+      flex: 1;
       padding: 8px;
       font-size: 13px;
       cursor: pointer;
       border: 1px solid #ccc;
       border-radius: 4px;
       background: #f5f5f5;
-      margin-bottom: 10px;
     }
     .sync-btn:hover { background: #eee; }
 
@@ -116,8 +120,10 @@
 
   <div id="site-list" class="site-list"></div>
 
-  <button id="sync-all" class="sync-btn">立即同步全部</button>
-  <button id="copy-account" class="sync-btn">前端 account</button>
+  <div class="btn-row">
+    <button id="sync-all" class="sync-btn">立即同步全部</button>
+    <button id="copy-account" class="sync-btn">前端 account</button>
+  </div>
 
   <div id="log" class="log"></div>
 
