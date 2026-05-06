@@ -4,6 +4,7 @@ const addBtn = document.getElementById('add-btn');
 const addError = document.getElementById('add-error');
 const siteListEl = document.getElementById('site-list');
 const syncAllBtn = document.getElementById('sync-all');
+const copyAccountBtn = document.getElementById('copy-account');
 const logEl = document.getElementById('log');
 
 // 检测 Tauri 在线状态
@@ -124,6 +125,67 @@ syncAllBtn.addEventListener('click', async () => {
   await refresh();
   syncAllBtn.textContent = '立即同步全部';
   syncAllBtn.disabled = false;
+});
+
+// 复制前端 account
+async function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '-9999px';
+  (document.body || document.documentElement).appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  if (ta.remove) ta.remove();
+  else if (ta.parentNode) ta.parentNode.removeChild(ta);
+  return ok;
+}
+
+copyAccountBtn.addEventListener('click', async () => {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) {
+      logEl.innerHTML = '<div class="err">无法获取当前标签页</div>';
+      return;
+    }
+
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const keys = ['accessToken', 'orgId', 'operateUserId', 'openOrgId', 'uid'];
+        const data = {};
+        for (const k of keys) data[k] = localStorage.getItem(k);
+        return data;
+      }
+    });
+
+    const data = results[0]?.result ?? {};
+    const text = JSON.stringify(data, null, 2);
+
+    let copied = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch (e) {
+        copied = await fallbackCopy(text);
+      }
+    } else {
+      copied = await fallbackCopy(text);
+    }
+
+    if (copied) {
+      logEl.innerHTML = `<div class="ok">已复制 account 数据</div><div style="color:#555;margin-top:4px;">${text.replace(/\n/g, '<br>')}</div>`;
+    } else {
+      logEl.innerHTML = `<div class="err">复制失败，请在控制台查看</div><div style="color:#555;margin-top:4px;">${text.replace(/\n/g, '<br>')}</div>`;
+      console.log('account 数据:', text);
+    }
+  } catch (err) {
+    logEl.innerHTML = `<div class="err">获取失败: ${err.message}</div>`;
+  }
 });
 
 // 初始化
