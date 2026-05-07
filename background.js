@@ -1,3 +1,5 @@
+import { fetchDomains, createDomain, pickPrimaryUrl } from './lib/tauri-domain-api.js';
+
 // ========== 配置层 ==========
 const STORAGE_KEY = 'sites';
 
@@ -24,6 +26,19 @@ async function addSite(url) {
   if (sites.some(s => s.hostname === hostname)) {
     return { ok: false, error: '该域名已存在' };
   }
+
+  // 同步在 Tauri 注册 domain（离线 / 已存在不阻塞本地添加）
+  try {
+    const result = await createDomain(hostname, [url]);
+    if (result.exists) {
+      console.log('[CookieBridge] Tauri domain 已存在，跳过创建', hostname);
+    } else {
+      console.log('[CookieBridge] Tauri domain 已创建', hostname, result.domain?.id);
+    }
+  } catch (e) {
+    console.warn('[CookieBridge] Tauri 注册 domain 失败', hostname, e?.message || e);
+  }
+
   sites.push({ url, hostname, enabled: true, addedAt: Date.now() });
   await chrome.storage.local.set({ sites });
   return { ok: true };
@@ -42,6 +57,38 @@ async function setEnabled(hostname, enabled) {
     sites[idx].enabled = enabled;
     await chrome.storage.local.set({ sites });
   }
+}
+
+// 启动 / 主动刷新时拉取 Tauri 全量域名，并合并到本地 sites
+// （只新增不删除：本地 disable 状态由用户控制，Tauri 删除不影响本地展示）
+async function syncDomainsFromTauri() {
+  let domains;
+  try {
+    domains = await fetchDomains();
+  } catch (e) {
+    console.warn('[CookieBridge] 拉取 Tauri 域名列表失败', e?.message || e);
+    return { ok: false, error: e?.message || String(e) };
+  }
+
+  const sites = await getAllSites();
+  const existingHosts = new Set(sites.map(s => s.hostname));
+  let added = 0;
+  for (const d of domains) {
+    if (!d?.domainName || existingHosts.has(d.domainName)) continue;
+    const url = pickPrimaryUrl(d.urls) || `https://${d.domainName}`;
+    sites.push({
+      url,
+      hostname: d.domainName,
+      enabled: true,
+      addedAt: Date.now(),
+    });
+    added += 1;
+  }
+  if (added > 0) {
+    await chrome.storage.local.set({ sites });
+  }
+  console.log('[CookieBridge] Tauri domains synced, total=', domains.length, 'added=', added);
+  return { ok: true, total: domains.length, added };
 }
 
 // ========== 状态 ==========
@@ -272,10 +319,14 @@ async function snapshotLsForHost(hostname) {
 
 // 1. 启动 / 安装
 chrome.runtime.onStartup.addListener(() => {
-  loadLsCache().then(() => registerScripts().then(syncAll));
+  loadLsCache()
+    .then(syncDomainsFromTauri)
+    .then(() => registerScripts().then(syncAll));
 });
 chrome.runtime.onInstalled.addListener(() => {
-  loadLsCache().then(() => registerScripts().then(syncAll));
+  loadLsCache()
+    .then(syncDomainsFromTauri)
+    .then(() => registerScripts().then(syncAll));
 });
 
 // 2. 配置变化 -> 重新注册
@@ -323,6 +374,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case 'addSite': {
         const result = await addSite(msg.url);
+        sendResponse(result);
+        break;
+      }
+      case 'refreshDomains': {
+        const result = await syncDomainsFromTauri();
         sendResponse(result);
         break;
       }

@@ -191,6 +191,12 @@ copyAccountBtn.addEventListener('click', async () => {
 // 初始化
 checkTauri();
 refresh();
+// 后台拉取 Tauri 全量 domain，拉到新条目后再次刷新 UI
+chrome.runtime.sendMessage({ type: 'refreshDomains' })
+  .then((res) => {
+    if (res?.ok && res.added > 0) refresh();
+  })
+  .catch(() => { /* 忽略：Tauri 离线时本地列表仍可用 */ });
 
 // 默认填入当前标签页 URL，方便直接添加当前站点
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
