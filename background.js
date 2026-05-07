@@ -132,38 +132,54 @@ async function saveLsCache() {
 }
 
 // ========== content script 注册 ==========
+let registering = false;
+let pendingRegister = false;
+
 async function registerScripts() {
-  const sites = await getSites();
-  const matches = sites.map(s => `*://${s.hostname}/*`);
-
-  // 先全部注销
+  if (registering) {
+    pendingRegister = true;
+    return;
+  }
+  registering = true;
   try {
-    await chrome.scripting.unregisterContentScripts();
-  } catch { /* ignore */ }
+    const sites = await getSites();
+    const matches = sites.map(s => `*://${s.hostname}/*`);
 
-  if (matches.length === 0) return;
+    // 先全部注销
+    try {
+      await chrome.scripting.unregisterContentScripts();
+    } catch { /* ignore */ }
 
-  const scripts = [];
-  // MAIN world hook
-  scripts.push({
-    id: 'cs-main',
-    matches,
-    js: ['inject.js'],
-    runAt: 'document_start',
-    world: 'MAIN',
-    allFrames: false,
-  });
-  // ISOLATED world bridge
-  scripts.push({
-    id: 'cs-iso',
-    matches,
-    js: ['content.js'],
-    runAt: 'document_start',
-    world: 'ISOLATED',
-    allFrames: false,
-  });
+    if (matches.length === 0) return;
 
-  await chrome.scripting.registerContentScripts(scripts);
+    const scripts = [];
+    // MAIN world hook
+    scripts.push({
+      id: 'cs-main',
+      matches,
+      js: ['inject.js'],
+      runAt: 'document_start',
+      world: 'MAIN',
+      allFrames: false,
+    });
+    // ISOLATED world bridge
+    scripts.push({
+      id: 'cs-iso',
+      matches,
+      js: ['content.js'],
+      runAt: 'document_start',
+      world: 'ISOLATED',
+      allFrames: false,
+    });
+
+    await chrome.scripting.registerContentScripts(scripts);
+  } finally {
+    registering = false;
+    if (pendingRegister) {
+      pendingRegister = false;
+      await registerScripts();
+    }
+  }
 }
 
 // ========== 同步核心 ==========
