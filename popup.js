@@ -25,6 +25,8 @@ async function checkTauri() {
   }
 }
 
+let sitesExpanded = false;
+
 function renderSites(data) {
   siteListEl.innerHTML = '';
   if (!data.sites || data.sites.length === 0) {
@@ -32,7 +34,11 @@ function renderSites(data) {
     return;
   }
 
-  for (const s of data.sites) {
+  const MAX_SHOWN = 10;
+  const total = data.sites.length;
+  const sitesToRender = sitesExpanded ? data.sites : data.sites.slice(0, MAX_SHOWN);
+
+  for (const s of sitesToRender) {
     const item = document.createElement('div');
     item.className = 'site-item';
 
@@ -75,6 +81,17 @@ function renderSites(data) {
     item.appendChild(info);
     item.appendChild(del);
     siteListEl.appendChild(item);
+  }
+
+  if (total > MAX_SHOWN) {
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'more-btn';
+    moreBtn.textContent = sitesExpanded ? '收起' : `更多 (${total - MAX_SHOWN})`;
+    moreBtn.addEventListener('click', () => {
+      sitesExpanded = !sitesExpanded;
+      renderSites(data);
+    });
+    siteListEl.appendChild(moreBtn);
   }
 }
 
